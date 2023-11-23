@@ -17,8 +17,11 @@
 
 #include <errno.h>
 
+#include <cir_buff.h>
+
 #define LECTURA 0
 #define ESCRIPTURA 1
+
 
 void * get_ebp();
 
@@ -207,6 +210,12 @@ void sys_exit()
   
   /* Restarts execution of the next process */
   sched_next_rr();
+}
+
+extern struct buffer_cir* keyBuff;
+
+int sys_pollKey(char* b){
+  return CircularBufferRead(keyBuff, b);
 }
 
 /* System call to force a task switch */

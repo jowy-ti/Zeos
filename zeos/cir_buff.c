@@ -2,25 +2,34 @@
 
 
 
-void CircularBufferInit(buffer_cir* buf){
+void CircularBufferInit(struct buffer_cir* buf){
 	buf->write_ptr = 0;
 	buf->read_ptr = 0;
 	buf->num_elem = 0;
 }
 
-int CircularBufferIsFull(buffer_cir* buf){
-	return (((buf->write_ptr + 1) % BUF_SIZE) == buf->read_ptr);
+int CircularBufferIsFull(struct buffer_cir* buf){
+	return buf->num_elem == BUF_SIZE;
 }
 
-int CircularBufferIsEmpty(buffer_cir* buf){
-	return (buf->read_ptr == buf->write_ptr);
+int CircularBufferIsEmpty(struct buffer_cir* buf){
+	return buf->num_elem == 0;
 }
 
-int CircularBufferEnque (buffer_cir* buf, char c){
-	int full = CircularBufferIsFull	(buf);
-	if (!full){
+void CircularBufferWrite (struct buffer_cir* buf, char c){
+	if (!CircularBufferIsFull(buf)){
 		buf->buffer[buf->write_ptr] = c;
 		buf->write_ptr = (buf->write_ptr + 1) % BUF_SIZE;
 		++buf->num_elem;
 	}
+}
+
+int CircularBufferRead (struct buffer_cir* buf, char* c){
+	if (!CircularBufferIsEmpty(buf)){
+		*c = buf->buffer[buf->read_ptr];
+		buf->read_ptr = (buf->read_ptr + 1) % BUF_SIZE;
+		--buf->num_elem;
+		return 0;
+	}
+	return -1;
 }

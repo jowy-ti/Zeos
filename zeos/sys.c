@@ -212,10 +212,10 @@ void sys_exit()
   sched_next_rr();
 }
 
-extern struct buffer_cir* keyBuff;
+extern struct buffer_cir keyBuff;
 
 int sys_pollKey(char* b){
-  return CircularBufferRead(keyBuff, b);
+  return CircularBufferRead(&keyBuff, b);
 }
 
 /* System call to force a task switch */

@@ -21,8 +21,8 @@ unsigned int *p_sys_size = (unsigned int *) KERNEL_START;
 unsigned int *p_usr_size = (unsigned int *) KERNEL_START+1;
 unsigned int *p_rdtr = (unsigned int *) KERNEL_START+2;
 
-/*Circular Buffer for Keys pressed*/
-struct buffer_cir* keyBuff;
+/*Circular Buffer for KeysEvents*/
+struct buffer_cir keyBuff;
 
 /************************/
 /** Auxiliar functions **/
@@ -100,7 +100,7 @@ int __attribute__((__section__(".text.main")))
   /* Initialize task 1 data */
   init_task1();
   /* Initialize circular buffer*/
-  CircularBufferInit(keyBuff);
+  CircularBufferInit(&keyBuff);
   /* Move user code/data now (after the page table initialization) */
   copy_data((void *) KERNEL_START + *p_sys_size, usr_main, *p_usr_size);
 

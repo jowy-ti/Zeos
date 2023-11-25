@@ -30,4 +30,6 @@ int get_stats(int pid, struct stats *st);
 
 int pollKey(char* b);
 
+int threadCreate(void(*function)(void* arg), void* parameter);
+
 #endif  /* __LIBC_H__ */

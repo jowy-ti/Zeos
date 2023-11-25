@@ -245,3 +245,28 @@ int sys_get_stats(int pid, struct stats *st)
   }
   return -ESRCH; /*ESRCH */
 }
+#define USER_STACK_SIZE 4096
+
+int sys_threadCreate(void(*function)(void* arg), void* parameter){
+  struct list_head *lhcurrent = NULL;
+  union task_union *newThread;
+  
+  /* Any free task_struct? */
+  if (list_empty(&freequeue)) return -ENOMEM;
+
+  lhcurrent=list_first(&freequeue);
+  
+  list_del(lhcurrent);
+
+  newThread=(union task_union*)list_head_to_task_struct(lhcurrent);
+  
+  copy_data(current(), newThread, sizeof(union task_union));
+
+  page_table_entry *newThread_PT = get_PT(&newThread->task);
+
+  unsigned long user_stack;
+  //como encuentro la primera zona para user stack libre??
+  newThread->stack[KERNEL_STACK_SIZE - 2] = user_stack;
+  newThread->stack[KERNEL_STACK_SIZE - 5] = function;
+
+}

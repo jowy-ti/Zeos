@@ -113,3 +113,16 @@ ENTRY(pollKey)
 	popl %ebp
 	ret
 
+ENTRY(threadCreate)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $5, %eax
+	movl 0x8(%ebp), %ebx;	//function
+	movl 0xC(%ebp), %ecx;	//parameter
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret

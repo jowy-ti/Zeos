@@ -253,7 +253,7 @@ void inner_task_switch(union task_union *new)
   setMSR(0x175, 0, (unsigned long)&(new->stack[KERNEL_STACK_SIZE]));
 
   /* TLB flush. New address space */
-  set_cr3(new_DIR);
+  if (current()->PID != new->task.PID) set_cr3(new_DIR);
 
   switch_stack(&current()->register_esp, new->task.register_esp);
 }

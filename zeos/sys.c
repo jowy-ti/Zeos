@@ -258,7 +258,7 @@ int sys_get_stats(int pid, struct stats *st)
   }
   return -ESRCH; /*ESRCH */
 }
-#define USER_STACK_SIZE 4096
+int global_TID=1000;
 
 int sys_threadCreate(void(*function)(void* arg), void* parameter){
   struct list_head *lhcurrent = NULL;
@@ -270,18 +270,36 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
   lhcurrent=list_first(&freequeue);
   
   list_del(lhcurrent);
-
+  /*Copy t_u current*/
   newThread=(union task_union*)list_head_to_task_struct(lhcurrent);
   
   copy_data(current(), newThread, sizeof(union task_union));
 
   page_table_entry *newThread_PT = get_PT(&newThread->task);
 
-  unsigned long user_stack;
-  //como encuentro la primera zona para user stack libre??
-  newThread->stack[KERNEL_STACK_SIZE - 2] = user_stack;
-  newThread->stack[KERNEL_STACK_SIZE - 5] = function;
+  /*Busqueda de la primera pagina libre desde el final de memoria*/
+  int i = 0;
+  while (get_frame(newThread_PT, 0xFFFFF000 - PAGE_SIZE*i) != 0){
+    i++;
+  }
+  /*Reserva y mapeo de pila de usuario*/
+  int frame = alloc_frame();
+  if (frame == -1) return -EAGAIN;
+  DWord user_stackAddr = 0xFFFFF000 - PAGE_SIZE*i;
+  set_ss_pag(newThread_PT, user_stackAddr, frame);
+  /*Init ctx ejecucion*/
+  *(DWord*)(user_stackAddr - 1) = (DWord) parameter;
+  *(DWord*)(user_stackAddr - 2) = 0;
+  newThread->stack[KERNEL_STACK_SIZE - 2]/*esp*/ = user_stackAddr - 2;
+  newThread->stack[KERNEL_STACK_SIZE - 5]/*eip*/ = (unsigned long)function;
+  /* Set stats to 0 */
+  init_stats(&(newThread->task.p_stats));
 
+  newThread->task.TID=++global_TID;
+  /*Queue Thread*/
+  newThread->task.state=ST_READY;
+  list_add_tail(&(newThread->task.list), &readyqueue);
+  return newThread->task.TID;
 }
 
 char* sys_memoryInc(int size) {	

@@ -270,3 +270,70 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
   newThread->stack[KERNEL_STACK_SIZE - 5] = function;
 
 }
+
+char* sys_memoryInc(int size) {	
+  page_table_entry *process_PT = get_PT(current());
+  struct task_struct* act = current();
+  int new_ph_pag, pag_act, rest, num_pag = 0;
+  
+  rest = (DWord)(act->p_heap)%PAGE_SIZE;
+  if (rest == 0 && (size%PAGE_SIZE) != 0) ++num_pag;
+  num_pag += (rest + size) >> 12;
+  
+  pag_act = (DWord)act->p_heap / PAGE_SIZE;
+  for (int pag = 0; pag < num_pag; pag++) {
+    new_ph_pag = alloc_frame();
+
+    if (new_ph_pag != -1 || get_frame(process_PT, pag_act+pag) != 0) set_ss_pag(process_PT, pag_act+pag, new_ph_pag);
+    else {
+    
+      for (int i = 0; i < pag; i++) {
+        free_frame(get_frame(process_PT, pag_act+i));
+        del_ss_pag(process_PT, pag_act+i);
+      }
+      return (char*)NULL; 
+    }
+  }
+  char* in = act->p_heap;
+  act->p_heap += size;
+  return in;
+}
+#define NUM_COLUMNS 80
+#define NUM_ROWS    25
+typedef struct {
+int x;
+//number of rows
+int y;
+//number of columns
+char* content; //pointer to sprite content matrix(X,Y)
+} Sprite;
+
+int sys_spritePut(int posX, int posY, Sprite* sp) {
+  if (posX < 0 || posX+sp->x >= NUM_COLUMNS || posY < 0 || posY+sp->y >= NUM_ROWS) return -EAGAIN;
+  if (sp->x == 0 || sp->y == 0) return -EAGAIN;
+  int cont = 0;
+  for (int i = 0; i < sp->y; ++i) {
+    for (int j = 0; j < sp->x; ++j) {
+	printc_xy(posX+i, posY+j, sp->content[cont]);
+	++cont;
+    }
+  }
+  return 1;
+}
+
+extern Byte x, y;
+
+int sys_gotoXY(int posX, int posY) {
+  if (posX < 0 || posX >= NUM_COLUMNS || posY < 0 || posY >= NUM_ROWS) return -EAGAIN;
+  x = posX;
+  y = posY;
+  return 1;
+}
+
+Word col = 0x0200;
+
+int sys_SetColor(int color, int background) {
+  if (color < 0 || color > 15 || background < 0 || background > 15) return -EAGAIN;
+  col = (background << 12) + (color << 8);
+  return 1;
+}

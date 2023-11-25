@@ -126,3 +126,64 @@ ENTRY(threadCreate)
 	js nok	// if (eax < 0) -->
 	popl %ebp
 	ret
+	
+ENTRY(memoryInc) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	pushl %edx;
+	pushl %ecx;
+	movl $21, %eax
+	movl 0x8(%ebp), %ebx;	//size
+	call syscall_sysenter
+	popl %ecx;
+	popl %edx;
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
+
+ENTRY(spritePut) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $22, %eax
+	movl 0x8(%ebp), %ebx;	//posX
+	movl 0xC(%ebp), %ecx;	//posY
+	movl 0x10(%ebp), %edx;	//Sprite
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
+
+ENTRY(gotoXY) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $23, %eax
+	movl 0x8(%ebp), %ebx;	//posX
+	movl 0xC(%ebp), %ecx;	//posY
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
+	
+ENTRY(SetColor) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $24, %eax
+	movl 0x8(%ebp), %ebx;	//posX
+	movl 0xC(%ebp), %ecx;	//posY
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
+	

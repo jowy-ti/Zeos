@@ -23,10 +23,10 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall	//18
 	.long sys_ni_syscall	//19
 	.long sys_getpid	//20	
-	.long sys_ni_syscall	//21
-	.long sys_ni_syscall	//22
-	.long sys_ni_syscall	//23
-	.long sys_ni_syscall	//24
+	.long sys_memoryInc	//21
+	.long sys_spritePut	//22
+	.long sys_gotoXY	//23
+	.long sys_SetColor	//24
 	.long sys_ni_syscall	//25
 	.long sys_ni_syscall	//26
 	.long sys_ni_syscall	//27

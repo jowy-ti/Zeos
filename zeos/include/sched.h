@@ -25,6 +25,7 @@ struct task_struct {
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
   int TID; /*Thread ID*/
+  char* p_heap;
 };
 
 union task_union {

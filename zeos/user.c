@@ -4,6 +4,14 @@ char buff[24];
 
 int pid;
 
+void readKeyBoard(void* b){
+  while (1){
+    if (pollKey(b) > -1){
+      write(1, b, 1);
+    }
+  }
+}
+
 int __attribute__ ((__section__(".text.main")))
   main(void)
 {
@@ -20,11 +28,10 @@ int __attribute__ ((__section__(".text.main")))
   gotoXY(30, 20);
   SetColor(5, 7);
   write(1,buff2, strlen(buff2));
-  
   char b;
+  threadCreate(&readKeyBoard, &b);
+
   while(1) { 
-    if (pollKey(&b) > -1){
-      write(1, &b, 1);
-    }
+
   }
 }

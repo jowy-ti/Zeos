@@ -279,18 +279,20 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
 
   /*Busqueda de la primera pagina libre desde el final de memoria*/
   int i = 0;
-  while (get_frame(newThread_PT, 0xFFFFF000 - PAGE_SIZE*i) != 0){
+  while (get_frame(newThread_PT, ((TOTAL_PAGES - 1) - i)) != 0){
     i++;
   }
   /*Reserva y mapeo de pila de usuario*/
   int frame = alloc_frame();
   if (frame == -1) return -EAGAIN;
-  DWord user_stackAddr = 0xFFFFF000 - PAGE_SIZE*i;
-  set_ss_pag(newThread_PT, user_stackAddr, frame);
+  unsigned long last_page = ((TOTAL_PAGES - 1) - i);
+  set_ss_pag(newThread_PT, last_page, frame);
+  DWord user_stackAddr = (last_page <<12);
+  user_stackAddr += 0xfff;
   /*Init ctx ejecucion*/
-  *(DWord*)(user_stackAddr - 1) = (DWord) parameter;
-  *(DWord*)(user_stackAddr - 2) = 0;
-  newThread->stack[KERNEL_STACK_SIZE - 2]/*esp*/ = user_stackAddr - 2;
+  *(DWord*)(user_stackAddr - 4) = (DWord) parameter;
+  *(DWord*)(user_stackAddr - 8) = (DWord) 0;
+  newThread->stack[KERNEL_STACK_SIZE - 2]/*esp*/ = user_stackAddr - 8;
   newThread->stack[KERNEL_STACK_SIZE - 5]/*eip*/ = (unsigned long)function;
   /* Set stats to 0 */
   init_stats(&(newThread->task.p_stats));
@@ -299,6 +301,9 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
   /*Queue Thread*/
   newThread->task.state=ST_READY;
   list_add_tail(&(newThread->task.list), &readyqueue);
+  /*update kernel esp*/
+	newThread->task.register_esp = (unsigned long) &(newThread->stack[KERNEL_STACK_SIZE-18]); 
+
   return newThread->task.TID;
 }
 

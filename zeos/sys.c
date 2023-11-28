@@ -285,6 +285,7 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
 }
 
 char* sys_memoryInc(int size) {	
+  if (size <= 0) return (char*)NULL;
   page_table_entry *process_PT = get_PT(current());
   struct task_struct* act = current();
   int new_ph_pag, pag_act, rest, num_pag = 0;

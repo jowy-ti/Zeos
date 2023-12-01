@@ -228,7 +228,12 @@ void sys_exit()
 extern struct buffer_cir keyBuff;
 
 int sys_pollKey(char* b){
-  return CircularBufferRead(&keyBuff, b);
+	if (!access_ok(VERIFY_WRITE, b, 1))
+		return -EFAULT;
+  char* c = 0;
+  int ret = CircularBufferRead(&keyBuff, c);
+  copy_to_user(c, b, sizeof(char));
+  return ret;
 }
 
 /* System call to force a task switch */
@@ -258,6 +263,7 @@ int sys_get_stats(int pid, struct stats *st)
   }
   return -ESRCH; /*ESRCH */
 }
+
 int global_TID=1000;
 
 int sys_threadCreate(void(*function)(void* arg), void* parameter){
@@ -357,8 +363,8 @@ int sys_spritePut(int posX, int posY, Sprite* sp) {
   int cont = 0;
   for (int i = 0; i < sp->y; ++i) {
     for (int j = 0; j < sp->x; ++j) {
-	printc_xy(posX+i, posY+j, sp->content[cont]);
-	++cont;
+      printc_xy(posX+i, posY+j, sp->content[cont]);
+      ++cont;
     }
   }
   return 1;

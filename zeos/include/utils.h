@@ -15,4 +15,6 @@ unsigned long get_ticks(void);
 
 void memset(void *s, unsigned char c, int size);
 
+int strlen2(char *a);
+
 #endif

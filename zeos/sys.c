@@ -82,7 +82,9 @@ int sys_fork(void)
   /* Allocate pages for DATA+STACK */
   int new_ph_pag, pag, i;
   page_table_entry *process_PT = get_PT(&uchild->task);
-  for (pag=0; pag<NUM_PAG_DATA; pag++)
+  int heap_pag = (((DWord)current()->p_heap - LOG_INIT_HEAP)/PAGE_SIZE);
+  if ((DWord)current()->p_heap % PAGE_SIZE != 0) ++heap_pag;
+  for (pag=0; pag<NUM_PAG_DATA+heap_pag; pag++)
   {
     new_ph_pag=alloc_frame();
     if (new_ph_pag!=-1) /* One page allocated */
@@ -116,8 +118,6 @@ int sys_fork(void)
     set_ss_pag(process_PT, PAG_LOG_INIT_CODE+pag, get_frame(parent_PT, PAG_LOG_INIT_CODE+pag));
   }
   
-  int heap_pag = (((DWord)current()->p_heap - LOG_INIT_HEAP)/PAGE_SIZE);
-  if ((DWord)current()->p_heap % PAGE_SIZE != 0) ++heap_pag;
   /* Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to */
   for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++)
   {
@@ -128,7 +128,7 @@ int sys_fork(void)
   }
   /* Copy parent's HEAP to child */
   
-  for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag<heap_pag+pag; pag++)
+  for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag<heap_pag+NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++)
   {
     /* Map one child page to parent's address space. */
     set_ss_pag(parent_PT, pag+heap_pag, get_frame(process_PT, pag));
@@ -314,10 +314,14 @@ char* sys_memoryInc(int size) {
   int new_ph_pag, pag_act, rest, num_pag = 0;
   
   rest = (DWord)(act->p_heap)%PAGE_SIZE;
-  if (rest == 0 && (size%PAGE_SIZE) != 0) ++num_pag;
   num_pag += (rest + size) >> 12;
+  if (rest == 0 && (size%PAGE_SIZE) != 0) ++num_pag;
+  else if (rest != 0 && (size%PAGE_SIZE) != 0 && (rest+size)%PAGE_SIZE == 0) --num_pag;
   
   pag_act = (DWord)act->p_heap / PAGE_SIZE;
+  if (rest != 0) ++pag_act;
+  if (num_pag+pag_act >= TOTAL_PAGES) return (char*)NULL;
+  
   for (int pag = 0; pag < num_pag; pag++) {
     new_ph_pag = alloc_frame();
 
@@ -348,6 +352,8 @@ char* content; //pointer to sprite content matrix(X,Y)
 int sys_spritePut(int posX, int posY, Sprite* sp) {
   if (posX < 0 || posX+sp->x >= NUM_COLUMNS || posY < 0 || posY+sp->y >= NUM_ROWS) return -EAGAIN;
   if (sp->x == 0 || sp->y == 0) return -EAGAIN;
+  if (sp->content == (char*)NULL) return -EAGAIN;
+  if (strlen2(sp->content) != sp->x*sp->y) return -EAGAIN;
   int cont = 0;
   for (int i = 0; i < sp->y; ++i) {
     for (int j = 0; j < sp->x; ++j) {

@@ -142,3 +142,13 @@ void memset(void *s, unsigned char c, int size)
     m[i]=c;
   }
 }
+int strlen2(char *a)
+{
+  int i;
+  
+  i=0;
+  
+  while (a[i]!=0) i++;
+  
+  return i;
+}

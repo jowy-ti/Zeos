@@ -25,15 +25,23 @@ int __attribute__ ((__section__(".text.main")))
   char* buff1 = memoryInc(96);
   memoryInc(4000);
   int pid = fork();
-  if (pid != 0) exit();
-  char buff2[32];
-  itoa((int)buff1, buff2);
-  gotoXY(30, 20);
-  SetColor(5, 7);
-  write(1,buff2, strlen(buff2));
-  char b;
-  threadCreate(&readKeyBoard, &b);
-
+  if (pid == 0){
+    char buff2[32];
+    itoa((int)buff1, buff2);
+    gotoXY(30, 20);
+    SetColor(5, 7);
+    write(1,buff2, strlen(buff2));
+    char b;
+    threadCreate(&readKeyBoard, &b);
+  }
+  else {
+    char* buff3 = memoryInc(96);
+    char buff2[32];
+    itoa((int)buff3, buff2);
+    write(1,buff2, strlen(buff2));
+    char c;
+    threadCreate(&readKeyBoard, &c);
+  }
   while(1) { 
 
   }

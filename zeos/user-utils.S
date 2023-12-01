@@ -127,6 +127,14 @@ ENTRY(threadCreate)
 	popl %ebp
 	ret
 	
+ENTRY(threadExit)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $6, %eax
+	call syscall_sysenter
+	popl %ebp
+	ret
+
 ENTRY(memoryInc) 
 	pushl %ebp
 	movl %esp, %ebp

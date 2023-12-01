@@ -8,7 +8,7 @@ ENTRY (sys_call_table)
 	.long sys_pollKey	//3
 	.long sys_write		//4
 	.long sys_threadCreate	//5
-	.long sys_ni_syscall	//6
+	.long sys_threadExit	//6
 	.long sys_ni_syscall	//7
 	.long sys_ni_syscall	//8
 	.long sys_ni_syscall	//9

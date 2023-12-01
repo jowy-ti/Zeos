@@ -230,9 +230,9 @@ extern struct buffer_cir keyBuff;
 int sys_pollKey(char* b){
 	if (!access_ok(VERIFY_WRITE, b, 1))
 		return -EFAULT;
-  char* c = 0;
-  int ret = CircularBufferRead(&keyBuff, c);
-  copy_to_user(c, b, sizeof(char));
+  char c;
+  int ret = CircularBufferRead(&keyBuff, &c);
+  copy_to_user(&c, b, sizeof(char));
   return ret;
 }
 
@@ -285,9 +285,10 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
 
   /*Busqueda de la primera pagina libre desde el final de memoria*/
   int i = 0;
-  while (get_frame(newThread_PT, ((TOTAL_PAGES - 1) - i)) != 0){
+  while (i < TOTAL_PAGES && get_frame(newThread_PT, ((TOTAL_PAGES - 1) - i)) != 0){
     i++;
   }
+  if (i == TOTAL_PAGES) return -EAGAIN;
   /*Reserva y mapeo de pila de usuario*/
   int frame = alloc_frame();
   if (frame == -1) return -EAGAIN;
@@ -311,6 +312,23 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
 	newThread->task.register_esp = (unsigned long) &(newThread->stack[KERNEL_STACK_SIZE-18]); 
 
   return newThread->task.TID;
+  //preguntar al profe:
+  //el fork tiene q heredar los threads??
+  //como marco en el access_ok tiene q estas paginas son de user?? con esp??
+}
+
+void sys_threadExit(void){
+  // Deallocate stack physical page
+  page_table_entry *process_PT = get_PT(current());
+  DWord stack_page = ((((union task_union*)current())->stack[KERNEL_STACK_SIZE - 2]/*esp*/)>>12);
+  free_frame(get_frame(process_PT, stack_page));
+  del_ss_pag(process_PT, stack_page);
+
+  /* Free task_struct */
+  list_add_tail(&(current()->list), &freequeue);
+
+  /* Restarts execution of the next process */
+  sched_next_rr();
 }
 
 char* sys_memoryInc(int size) {	
@@ -347,12 +365,13 @@ char* sys_memoryInc(int size) {
 }
 #define NUM_COLUMNS 80
 #define NUM_ROWS    25
+
 typedef struct {
-int x;
+  int x;
 //number of rows
-int y;
+  int y;
 //number of columns
-char* content; //pointer to sprite content matrix(X,Y)
+  char* content; //pointer to sprite content matrix(X,Y)
 } Sprite;
 
 int sys_spritePut(int posX, int posY, Sprite* sp) {

@@ -343,7 +343,7 @@ char* sys_memoryInc(int size) {
   }
   char* in = act->p_heap;
   act->p_heap += size;
-  return in;
+  return (char*)((DWord)in+(DWord)process_PT);
 }
 #define NUM_COLUMNS 80
 #define NUM_ROWS    25
@@ -356,10 +356,12 @@ char* content; //pointer to sprite content matrix(X,Y)
 } Sprite;
 
 int sys_spritePut(int posX, int posY, Sprite* sp) {
+  if (!access_ok(VERIFY_READ, sp, 12)) return -EAGAIN;
   if (posX < 0 || posX+sp->x >= NUM_COLUMNS || posY < 0 || posY+sp->y >= NUM_ROWS) return -EAGAIN;
   if (sp->x == 0 || sp->y == 0) return -EAGAIN;
   if (sp->content == (char*)NULL) return -EAGAIN;
   if (strlen2(sp->content) != sp->x*sp->y) return -EAGAIN;
+  
   int cont = 0;
   for (int i = 0; i < sp->y; ++i) {
     for (int j = 0; j < sp->x; ++j) {

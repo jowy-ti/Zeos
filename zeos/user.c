@@ -22,9 +22,9 @@ int __attribute__ ((__section__(".text.main")))
   sp.y = 1;
   sp.content = "---";
   spritePut(50, 20, &sp);
-  int pid = fork();
   char* buff1 = memoryInc(96);
   memoryInc(4000);
+  int pid = fork();
   char buff2[32];
   itoa((int)buff1, buff2);
   gotoXY(30, 20);

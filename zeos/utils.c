@@ -1,5 +1,6 @@
 #include <utils.h>
 #include <types.h>
+#include <sched.h>
 
 #include <mm_address.h>
 
@@ -65,6 +66,10 @@ extern int threadStacksPage;
 int access_ok(int type, const void * addr, unsigned long size)
 {
   unsigned long addr_ini, addr_fin;
+  
+  int rest = (DWord)(current()->p_heap)%PAGE_SIZE;
+  int heap_pag = (((DWord)current()->p_heap - LOG_INIT_HEAP)/PAGE_SIZE);
+  if (rest != 0) ++heap_pag;
 
   addr_ini=(((unsigned long)addr)>>12);
   addr_fin=((((unsigned long)addr)+size)>>12);
@@ -75,11 +80,11 @@ int access_ok(int type, const void * addr, unsigned long size)
     case VERIFY_WRITE:
       /* Should suppose no support for automodifyable code */
       if (((addr_ini>=USER_FIRST_PAGE+NUM_PAG_CODE)&&
-          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA)) || (addr_ini >= threadStacksPage))
+          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+heap_pag)) || (addr_ini >= threadStacksPage))
 	  return 1;
     default:
       if (((addr_ini>=USER_FIRST_PAGE)&&
-  	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA))) || (addr_ini >= threadStacksPage))
+  	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+heap_pag))) || (addr_ini >= threadStacksPage))
           return 1;
   }
   return 0;

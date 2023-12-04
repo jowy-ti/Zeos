@@ -94,6 +94,7 @@ int __attribute__((__section__(".text.main")))
 
   /* Initialize Scheduling */
   init_sched();
+  init_semaforos();
 
   /* Initialize idle task  data */
   init_idle();

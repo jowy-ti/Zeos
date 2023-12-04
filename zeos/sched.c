@@ -34,6 +34,8 @@ struct list_head freequeue;
 // Ready queue
 struct list_head readyqueue;
 
+//struct Semaforo semaf[NR_SEM];
+
 void init_stats(struct stats *s)
 {
 	s->user_ticks = 0;
@@ -236,6 +238,15 @@ struct task_struct* current()
   int ret_value;
   
   return (struct task_struct*)( ((unsigned int)&ret_value) & 0xfffff000);
+}
+
+void init_semaforos(void) {
+  for (int i = 0; i < NR_TASKS; ++i) {
+    for (int j = 0; j < NR_SEM; ++j) {
+      task[i].task.sem[j].count = -1;
+      task[i].task.sem[j].tid_owner = -1;
+    }
+  }
 }
 
 struct task_struct* list_head_to_task_struct(struct list_head *l)

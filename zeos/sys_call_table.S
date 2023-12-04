@@ -27,10 +27,10 @@ ENTRY (sys_call_table)
 	.long sys_spritePut	//22
 	.long sys_gotoXY	//23
 	.long sys_SetColor	//24
-	.long sys_ni_syscall	//25
-	.long sys_ni_syscall	//26
-	.long sys_ni_syscall	//27
-	.long sys_ni_syscall	//28
+	.long sys_semCreate	//25
+	.long sys_semWait	//26
+	.long sys_semSignal	//27
+	.long sys_semDestroy	//28
 	.long sys_ni_syscall	//29
 	.long sys_ni_syscall	//30
 	.long sys_ni_syscall	//31

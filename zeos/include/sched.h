@@ -9,9 +9,10 @@
 #include <types.h>
 #include <mm_address.h>
 #include <stats.h>
-
+#include <semaforo.h>
 
 #define NR_TASKS      10
+#define NR_SEM      2
 #define KERNEL_STACK_SIZE	1024
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
@@ -26,6 +27,7 @@ struct task_struct {
   struct stats p_stats;		/* Process stats */
   int TID; /*Thread ID*/
   char* p_heap;
+  struct semaforo sem[NR_SEM];
 };
 
 union task_union {
@@ -36,6 +38,7 @@ union task_union {
 extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
+//extern struct Semaforo semaf[NR_SEM];
 
 
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
@@ -51,6 +54,8 @@ void init_task1(void);
 void init_idle(void);
 
 void init_sched(void);
+
+void init_semaforos(void);
 
 void schedule(void);
 

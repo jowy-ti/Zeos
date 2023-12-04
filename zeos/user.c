@@ -22,6 +22,8 @@ int __attribute__ ((__section__(".text.main")))
   sp.y = 1;
   sp.content = "---";
   spritePut(50, 20, &sp);
+  itoa(semCreate(5), buff);
+  write(1,buff, strlen(buff));
   char* buff1 = memoryInc(96);
   memoryInc(4000);
   int pid = fork();

@@ -194,4 +194,56 @@ ENTRY(SetColor)
 	js nok	// if (eax < 0) -> 
 	popl %ebp
 	ret
+
+ENTRY(semCreate) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $25, %eax
+	movl 0x8(%ebp), %ebx;	//posX
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
+
+ENTRY(semWait) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $26, %eax
+	movl 0x8(%ebp), %ebx;	//posX
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
 	
+ENTRY(semSignal) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $27, %eax
+	movl 0x8(%ebp), %ebx;	//posX
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
+	
+ENTRY(semDestroy) 
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $28, %eax
+	movl 0x8(%ebp), %ebx;	//posX
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
+

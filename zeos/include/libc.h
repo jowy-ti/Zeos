@@ -50,5 +50,12 @@ int threadCreate(void(*function)(void* arg), void* parameter);
 
 void threadExit(void);
 
+int semCreate(int initial_value);
+
+int semWait(int semid);
+
+int semSignal(int semid);
+
+int semDestroy(int semid);
 
 #endif  /* __LIBC_H__ */

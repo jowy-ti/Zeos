@@ -19,6 +19,8 @@
 
 #include <cir_buff.h>
 
+#include <semaforo.h>
+
 #define LECTURA 0
 #define ESCRIPTURA 1
 
@@ -84,19 +86,14 @@ int sys_fork(void)
   page_table_entry *process_PT = get_PT(&uchild->task);
   page_table_entry *parent_PT = get_PT(current());
   
-  int rest = (DWord)(current()->p_heap) % PAGE_SIZE;
-  int pag_act = (DWord)current()->p_heap / PAGE_SIZE;
+  int rest = (DWord)(current()->p_heap)%PAGE_SIZE;
   int heap_pag = (((DWord)current()->p_heap - LOG_INIT_HEAP)/PAGE_SIZE);
-  
-  if (rest != 0) {
-  	++heap_pag;
-  	++pag_act;
-  }
+  if (rest != 0) ++heap_pag;
   
   for (pag=0; pag<NUM_PAG_DATA+heap_pag; pag++)
   {
     new_ph_pag=alloc_frame();
-    if (new_ph_pag!=-1 && get_frame(parent_PT, pag_act+pag) == 0) /* One page allocated */
+    if (new_ph_pag!=-1) /* One page allocated */
     {
       set_ss_pag(process_PT, PAG_LOG_INIT_DATA+pag, new_ph_pag);
     }
@@ -128,16 +125,22 @@ int sys_fork(void)
   
   /* Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to */
   /* Copy parent's HEAP to child */
+  
+  new_ph_pag=get_frame(parent_PT, NUM_PAG_KERNEL);
+  
   for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA+heap_pag; pag++)
   {
     /* Map one child page to parent's address space. */
-    set_ss_pag(parent_PT, pag+NUM_PAG_DATA+heap_pag, get_frame(process_PT, pag));
-    copy_data((void*)(pag<<12), (void*)((pag+NUM_PAG_DATA+heap_pag)<<12), PAGE_SIZE);
-    del_ss_pag(parent_PT, pag+NUM_PAG_DATA+heap_pag);
+    set_ss_pag(parent_PT, NUM_PAG_KERNEL, get_frame(process_PT, pag));
+    copy_data((void*)(pag<<12), (void*)((NUM_PAG_KERNEL)<<12), PAGE_SIZE);
+    del_ss_pag(parent_PT, NUM_PAG_KERNEL);
+    set_cr3(get_DIR(current()));
   }
   
-  /* Deny access to the child's memory space */
+  set_ss_pag(parent_PT, NUM_PAG_KERNEL, new_ph_pag);
   set_cr3(get_DIR(current()));
+  
+  /* Deny access to the child's memory space */
 
   uchild->task.PID=++global_PID;
   uchild->task.state=ST_READY;
@@ -377,7 +380,7 @@ typedef struct {
 } Sprite;
 
 int sys_spritePut(int posX, int posY, Sprite* sp) {
-  if (!access_ok(VERIFY_READ, sp, 12)) return -EAGAIN;
+  if (!access_ok(VERIFY_READ, sp, sizeof(Sprite))) return -EAGAIN;
   if (posX < 0 || posX+sp->x >= NUM_COLUMNS || posY < 0 || posY+sp->y >= NUM_ROWS) return -EAGAIN;
   if (sp->x == 0 || sp->y == 0) return -EAGAIN;
   if (sp->content == (char*)NULL) return -EAGAIN;
@@ -407,5 +410,45 @@ Word col = 0x0200;
 int sys_SetColor(int color, int background) {
   if (color < 0 || color > 15 || background < 0 || background > 15) return -EAGAIN;
   col = (background << 12) + (color << 8);
+  return 1;
+}
+
+int sys_semCreate(int initial_value) {
+  struct task_struct* act = current();
+  if (initial_value < 0) return -1;
+  int find = -1;
+  for (int i = 0; i < NR_SEM && find == -1; ++i) {
+    if (act->sem[i].count == -1) {
+      act->sem[i].count = initial_value;
+      find = i;
+      INIT_LIST_HEAD(&(act->sem[i].block_list));
+    }
+  }
+  if (find == -1) return -1;
+  return find;
+}
+
+int sys_semWait(int semid) {
+  struct task_struct* act = current();
+  
+  if (semid < 0 || semid >= NR_SEM) return -1;
+  if (act->sem[semid].count == -1) return -1;
+  
+  if (act->sem[semid].count <= 0) block(&(act->list) ,&(act->sem[semid]));
+  else act->sem[semid].count -= 1;
+  
+  return 1;
+}
+
+int sys_semSignal(int semid) {
+  struct task_struct* act = current();
+  if (act->sem[semid].count == -1) return -1;
+  act->sem[semid].count += 1;
+  if (act->sem[semid].count > 0);
+  return 1;
+}
+
+int sys_semDestroy(int semid) {
+
   return 1;
 }

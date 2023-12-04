@@ -315,10 +315,9 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
   /*Queue Thread*/
   newThread->task.state=ST_READY;
   list_add_tail(&(newThread->task.list), &readyqueue);
-  list_add_tail(&(newThread->task.thread_list), &(current()->task.threadGroup));
   /*update kernel esp*/
 	newThread->task.register_esp = (unsigned long) &(newThread->stack[KERNEL_STACK_SIZE-18]); 
-  list_add_tail()
+  
   return newThread->task.TID;
 }
 

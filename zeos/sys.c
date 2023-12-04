@@ -19,7 +19,7 @@
 
 #include <cir_buff.h>
 
-#include <semaforo.h>
+#include <list.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -413,6 +413,15 @@ int sys_SetColor(int color, int background) {
   return 1;
 }
 
+//SEMAFOROS
+
+int test(struct task_struct* task, int semid) {
+  if (semid < 0 || semid >= NR_SEM) return -1;
+  if (task->sem[semid].count == -1) return -1;
+  if (task->sem[semid].tid_owner == -1) return -1;
+  return 1;
+}
+
 int sys_semCreate(int initial_value) {
   struct task_struct* act = current();
   if (initial_value < 0) return -1;
@@ -420,8 +429,9 @@ int sys_semCreate(int initial_value) {
   for (int i = 0; i < NR_SEM && find == -1; ++i) {
     if (act->sem[i].count == -1) {
       act->sem[i].count = initial_value;
+      act->sem[i].tid_owner = act->TID;
       find = i;
-      INIT_LIST_HEAD(&(act->sem[i].block_list));
+      INIT_LIST_HEAD(&(act->sem[i].sem_list));
     }
   }
   if (find == -1) return -1;
@@ -431,10 +441,12 @@ int sys_semCreate(int initial_value) {
 int sys_semWait(int semid) {
   struct task_struct* act = current();
   
-  if (semid < 0 || semid >= NR_SEM) return -1;
-  if (act->sem[semid].count == -1) return -1;
+  if (test(act, semid) == -1) return -1;
   
-  if (act->sem[semid].count <= 0) block(&(act->list) ,&(act->sem[semid]));
+  if (act->sem[semid].count <= 0) {
+    list_add_tail(&(act->list), &(act->sem[semid].sem_list));
+    sched_next_rr();
+  }
   else act->sem[semid].count -= 1;
   
   return 1;
@@ -442,13 +454,33 @@ int sys_semWait(int semid) {
 
 int sys_semSignal(int semid) {
   struct task_struct* act = current();
-  if (act->sem[semid].count == -1) return -1;
+  
+  if (test(act, semid) == -1) return -1;
+  
   act->sem[semid].count += 1;
-  if (act->sem[semid].count > 0);
+  if (act->sem[semid].count <= 1) {
+    struct list_head *new = list_first(&(act->sem[semid].sem_list));
+    list_del(new);
+    list_add_tail(new, &readyqueue);
+  }
   return 1;
 }
 
 int sys_semDestroy(int semid) {
-
-  return 1;
+  struct task_struct* act = current();
+  
+  if (test(act, semid) == -1) return -1;
+	
+  if (act->TID == act->sem[semid].tid_owner) {
+    act->sem[semid].count = -1;
+    
+    while(!list_empty(&(act->sem[semid].sem_list))) {
+      struct list_head * new = list_first(&(act->sem[semid].sem_list));
+      list_del(new);
+      list_add_tail(new, &readyqueue);
+    }
+  }
+  else return -1;
+  
+  return 0;
 }

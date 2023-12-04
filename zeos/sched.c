@@ -242,7 +242,10 @@ struct task_struct* current()
 
 void init_semaforos(void) {
   for (int i = 0; i < NR_TASKS; ++i) {
-    for (int j = 0; j < NR_SEM; ++j) task[i].task.sem[j].count = -1;
+    for (int j = 0; j < NR_SEM; ++j) {
+      task[i].task.sem[j].count = -1;
+      task[i].task.sem[j].tid_owner = -1;
+    }
   }
 }
 

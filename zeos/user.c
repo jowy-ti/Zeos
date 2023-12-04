@@ -4,10 +4,11 @@ char buff[24];
 
 int pid;
 
-void readKeyBoard(void* b){
+void readKeyBoard(){
+  char b;
   while (1){
-    if (pollKey(b) > -1){
-      write(1, b, 1);
+    if (pollKey(&b) > -1){
+      write(1, &b, 1);
     }
   }
 }
@@ -31,16 +32,14 @@ int __attribute__ ((__section__(".text.main")))
     gotoXY(30, 20);
     SetColor(5, 7);
     write(1,buff2, strlen(buff2));
-    char b;
-    threadCreate(&readKeyBoard, &b);
+    threadCreate(&readKeyBoard, (void*)0);
   }
   else {
     char* buff3 = memoryInc(96);
     char buff2[32];
     itoa((int)buff3, buff2);
     write(1,buff2, strlen(buff2));
-    char c;
-    threadCreate(&readKeyBoard, &c);
+    threadCreate(&readKeyBoard, (void*)0);
   }
   while(1) { 
 

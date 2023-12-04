@@ -217,7 +217,7 @@ void sys_exit()
     free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
     del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
   }
-  
+  // hacer threadExit de todos los threads del proceso
   /* Free task_struct */
   list_add_tail(&(current()->list), &freequeue);
   
@@ -267,11 +267,12 @@ int sys_get_stats(int pid, struct stats *st)
 }
 
 int global_TID=1000;
+int threadStacksPage = TOTAL_PAGES;
 
 int sys_threadCreate(void(*function)(void* arg), void* parameter){
   struct list_head *lhcurrent = NULL;
   union task_union *newThread;
-  
+  //comprovar que funcion este en la zona de codigo
   /* Any free task_struct? */
   if (list_empty(&freequeue)) return -ENOMEM;
 
@@ -297,6 +298,7 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
   unsigned long last_page = ((TOTAL_PAGES - 1) - i);
   set_ss_pag(newThread_PT, last_page, frame);
   DWord user_stackAddr = (last_page <<12);
+  if (last_page < threadStacksPage) threadStacksPage = last_page;
   user_stackAddr += 0xfff;
   /*Init ctx ejecucion*/
   *(DWord*)(user_stackAddr - 4) = (DWord) parameter;
@@ -310,13 +312,11 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
   /*Queue Thread*/
   newThread->task.state=ST_READY;
   list_add_tail(&(newThread->task.list), &readyqueue);
+  list_add_tail(&(newThread->task.thread_list), &(current()->task.threadGroup));
   /*update kernel esp*/
 	newThread->task.register_esp = (unsigned long) &(newThread->stack[KERNEL_STACK_SIZE-18]); 
-
+  list_add_tail()
   return newThread->task.TID;
-  //preguntar al profe:
-  //el fork tiene q heredar los threads??
-  //como marco en el access_ok tiene q estas paginas son de user?? con esp??
 }
 
 void sys_threadExit(void){
@@ -325,7 +325,7 @@ void sys_threadExit(void){
   DWord stack_page = ((((union task_union*)current())->stack[KERNEL_STACK_SIZE - 2]/*esp*/)>>12);
   free_frame(get_frame(process_PT, stack_page));
   del_ss_pag(process_PT, stack_page);
-
+  //si es el ultimo thread DeAlloc mem
   /* Free task_struct */
   list_add_tail(&(current()->list), &freequeue);
 

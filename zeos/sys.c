@@ -426,15 +426,15 @@ typedef struct {
 
 int sys_spritePut(int posX, int posY, Sprite* sp) {
   if (!access_ok(VERIFY_READ, sp, sizeof(Sprite))) return -EAGAIN;
+  if (!access_ok(VERIFY_READ, sp->content, sp->x*sp->y)) return -EAGAIN;
   if (posX < 0 || posX+sp->x >= NUM_COLUMNS || posY < 0 || posY+sp->y >= NUM_ROWS) return -EAGAIN;
   if (sp->x == 0 || sp->y == 0) return -EAGAIN;
   if (sp->content == (char*)NULL) return -EAGAIN;
-  if (strlen2(sp->content) != sp->x*sp->y) return -EAGAIN;
   
   int cont = 0;
   for (int i = 0; i < sp->y; ++i) {
     for (int j = 0; j < sp->x; ++j) {
-      printc_xy(posX+i, posY+j, sp->content[cont]);
+      printc_xy(posX+i, posY+j, (char)sp->content[cont]);
       ++cont;
     }
   }

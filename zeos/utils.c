@@ -65,7 +65,7 @@ extern int threadStacksPage;
  */
 int access_ok(int type, const void * addr, unsigned long size)
 {
-  unsigned long addr_ini, addr_fin;
+  unsigned long addr_ini, addr_fin, fin;
   
   int rest = (DWord)(current()->p_heap)%PAGE_SIZE;
   int heap_pag = (((DWord)current()->p_heap - LOG_INIT_HEAP)/PAGE_SIZE);
@@ -73,6 +73,7 @@ int access_ok(int type, const void * addr, unsigned long size)
 
   addr_ini=(((unsigned long)addr)>>12);
   addr_fin=((((unsigned long)addr)+size)>>12);
+  fin =(((unsigned long)addr)+size);
   if (addr_fin < addr_ini) return 0; //This looks like an overflow ... deny access
 
   switch(type)
@@ -80,11 +81,11 @@ int access_ok(int type, const void * addr, unsigned long size)
     case VERIFY_WRITE:
       /* Should suppose no support for automodifyable code */
       if (((addr_ini>=USER_FIRST_PAGE+NUM_PAG_CODE)&&
-          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+heap_pag)) || (addr_ini >= threadStacksPage))
+          (addr_fin<=USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA) && (fin < (unsigned long)current()->p_heap)) || (addr_ini >= threadStacksPage))
 	  return 1;
     default:
       if (((addr_ini>=USER_FIRST_PAGE)&&
-  	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+heap_pag))) || (addr_ini >= threadStacksPage))
+  	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA+heap_pag)) && (fin < (unsigned long)current()->p_heap)) || (addr_ini >= threadStacksPage))
           return 1;
   }
   return 0;

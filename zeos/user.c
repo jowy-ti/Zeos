@@ -13,6 +13,10 @@ void readKeyBoard(){
   }
 }
 
+void exitThread(){
+  threadExit();
+}
+
 int __attribute__ ((__section__(".text.main")))
   main(void)
 {
@@ -32,7 +36,8 @@ int __attribute__ ((__section__(".text.main")))
     gotoXY(30, 20);
     SetColor(5, 7);
     write(1,buff2, strlen(buff2));
-    threadCreate(&readKeyBoard, (void*)0);
+    threadCreate(&exitThread, (void*)0);
+    threadExit();
   }
   else {
     char* buff3 = memoryInc(96);
@@ -40,6 +45,8 @@ int __attribute__ ((__section__(".text.main")))
     itoa((int)buff3, buff2);
     write(1,buff2, strlen(buff2));
     threadCreate(&readKeyBoard, (void*)0);
+    pid = fork();
+    if (pid == 0) exit();
   }
   while(1) { 
 

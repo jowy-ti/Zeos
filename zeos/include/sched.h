@@ -24,15 +24,17 @@ struct semaforo {
 
 struct task_struct {
   int PID;			/* Process ID. This MUST be the first field of the struct. */
+  int TID; /*Thread ID*/
   page_table_entry * dir_pages_baseAddr;
   struct list_head list;	/* Task struct enqueuing */
   int register_esp;		/* position in the stack */
   enum state_t state;		/* State of the process */
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
-  int TID; /*Thread ID*/
   char* p_heap;
   struct semaforo sem[NR_SEM];
+  struct list_head thread_head; /*thread enqueuing*/
+  struct list_head* thread_list_ptr; /*thread list pointer*/
 };
 
 union task_union {

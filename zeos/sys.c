@@ -61,6 +61,8 @@ int ret_from_fork()
   return 0;
 }
 
+int global_TID=1000;
+extern struct list_head free_thread_lists;
 int sys_fork(void)
 {
   struct list_head *lhcurrent = NULL;
@@ -143,6 +145,7 @@ int sys_fork(void)
   /* Deny access to the child's memory space */
 
   uchild->task.PID=++global_PID;
+  uchild->task.TID=++global_TID;
   uchild->task.state=ST_READY;
 
   int register_ebp;		/* frame pointer */
@@ -162,6 +165,14 @@ int sys_fork(void)
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
 
+  /*Assign a thread list*/
+
+  struct list_head* threadL = list_first(&free_thread_lists);
+  list_del(threadL);
+  INIT_LIST_HEAD(threadL);
+  uchild->task.thread_list_ptr = threadL;
+  /*Add thread to thread list*/
+  list_add_tail(&(uchild->task.thread_head), threadL);
   /* Queue child process into readyqueue */
   uchild->task.state=ST_READY;
   list_add_tail(&(uchild->task.list), &readyqueue);
@@ -220,10 +231,25 @@ void sys_exit()
     free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
     del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
   }
-  // hacer threadExit de todos los threads del proceso
-  /* Free task_struct */
-  list_add_tail(&(current()->list), &freequeue);
   
+  // liberar todos los recursos de todos los threads del proceso
+  struct list_head* current_thread_list = current()->thread_list_ptr;
+  while (!list_empty(current_thread_list)){
+    struct list_head* l = list_first(current_thread_list);
+    struct task_struct* thread = list_head_to_task_struct(l);
+    list_del(&(thread->list));
+    list_add_tail(&(thread->list), &freequeue);
+    list_del(&(thread->thread_head));
+  }
+  list_add_tail(current_thread_list, &free_thread_lists);
+  for (i=NUM_PAG_DATA+heap_pag; i<TOTAL_PAGES; i++)
+  {
+    int frame = get_frame(process_PT, PAG_LOG_INIT_DATA+heap_pag+i);
+    if (frame != 0){
+      free_frame(frame);
+      del_ss_pag(process_PT, PAG_LOG_INIT_DATA+heap_pag+i);
+    }
+  }
   current()->PID=-1;
   
   /* Restarts execution of the next process */
@@ -269,13 +295,14 @@ int sys_get_stats(int pid, struct stats *st)
   return -ESRCH; /*ESRCH */
 }
 
-int global_TID=1000;
+
 int threadStacksPage = TOTAL_PAGES;
 
 int sys_threadCreate(void(*function)(void* arg), void* parameter){
   struct list_head *lhcurrent = NULL;
   union task_union *newThread;
   //comprovar que funcion este en la zona de codigo
+  if ((unsigned long) function <= ((USER_FIRST_PAGE) << 12) || (unsigned long) function >= ((USER_FIRST_PAGE + NUM_PAG_CODE) << 12)) return -EFAULT;
   /* Any free task_struct? */
   if (list_empty(&freequeue)) return -ENOMEM;
 
@@ -313,23 +340,42 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
 
   newThread->task.TID=++global_TID;
   /*Queue Thread*/
+  list_add_tail(&(newThread->task.thread_head), newThread->task.thread_list_ptr);
+  /*Queue into readyqueue*/
   newThread->task.state=ST_READY;
   list_add_tail(&(newThread->task.list), &readyqueue);
   /*update kernel esp*/
 	newThread->task.register_esp = (unsigned long) &(newThread->stack[KERNEL_STACK_SIZE-18]); 
-  
+
   return newThread->task.TID;
 }
 
 void sys_threadExit(void){
   // Deallocate stack physical page
-  page_table_entry *process_PT = get_PT(current());
-  DWord stack_page = ((((union task_union*)current())->stack[KERNEL_STACK_SIZE - 2]/*esp*/)>>12);
+  struct task_struct* act = current();
+  page_table_entry *process_PT = get_PT(act);
+  //dealloc user stack
+  DWord stack_page = ((((union task_union*)act)->stack[KERNEL_STACK_SIZE - 2]/*esp*/)>>12);
   free_frame(get_frame(process_PT, stack_page));
   del_ss_pag(process_PT, stack_page);
-  //si es el ultimo thread DeAlloc mem
+
+  int heap_pag = (((DWord)current()->p_heap - LOG_INIT_HEAP)/PAGE_SIZE);
+  if ((DWord)current()->p_heap % PAGE_SIZE != 0) ++heap_pag;
+
+  //si es el ultimo thread de la lista deallocata mem
+  list_del(&(act->thread_head));
+  if (list_empty(act->thread_list_ptr)){
+    list_add_tail(act->thread_list_ptr, &free_thread_lists);
+    // Deallocate all the propietary physical pages
+    for (int i=0; i<NUM_PAG_DATA+heap_pag; i++)
+    {
+      free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+      del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+    }
+  }
   /* Free task_struct */
-  list_add_tail(&(current()->list), &freequeue);
+  list_del(&act->list);
+  list_add_tail(&(act->list), &freequeue);
 
   /* Restarts execution of the next process */
   sched_next_rr();

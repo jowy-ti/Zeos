@@ -33,6 +33,10 @@ extern struct list_head blocked;
 struct list_head freequeue;
 // Ready queue
 struct list_head readyqueue;
+//thread lists
+struct list_head thread_list[NR_TASKS];
+//thread free lists
+struct list_head free_thread_lists;
 
 //struct Semaforo semaf[NR_SEM];
 
@@ -191,6 +195,14 @@ void init_task1(void)
   struct task_struct *c = list_head_to_task_struct(l);
   union task_union *uc = (union task_union*)c;
 
+  /*Assign a thread list*/
+  struct list_head* threadL = list_first(&free_thread_lists);
+  list_del(threadL);
+  INIT_LIST_HEAD(threadL);
+  c->thread_list_ptr = threadL;
+  /*Add thread to thread list*/
+  list_add_tail(&(c->thread_head), threadL);
+
   c->PID=1;
 
   c->total_quantum=DEFAULT_QUANTUM;
@@ -231,6 +243,12 @@ void init_sched()
 {
   init_freequeue();
   INIT_LIST_HEAD(&readyqueue);
+  /*assign all thread lists as free thread lists*/
+  INIT_LIST_HEAD(&free_thread_lists);
+  for (int i=0; i<NR_TASKS; i++)
+  {
+    list_add_tail(&(thread_list[i]), &free_thread_lists);
+  }
 }
 
 struct task_struct* current()

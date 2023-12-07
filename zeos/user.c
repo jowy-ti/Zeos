@@ -37,7 +37,7 @@ int __attribute__ ((__section__(".text.main")))
     SetColor(5, 7);
     write(1,buff2, strlen(buff2));
     int tid = threadCreate(&exitThread, (void*)0);
-    int semid = semCreate(2);
+    semCreate(2);
     semWait(0);
     semWait(0);
     semWait(0);

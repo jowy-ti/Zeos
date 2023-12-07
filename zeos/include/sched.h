@@ -11,7 +11,7 @@
 #include <stats.h>
 
 #define NR_TASKS      10
-#define NR_SEM      2
+#define NR_SEM      20
 #define KERNEL_STACK_SIZE	1024
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
@@ -32,7 +32,6 @@ struct task_struct {
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
   char* p_heap;
-  struct semaforo sem[NR_SEM];
   struct list_head thread_head; /*thread enqueuing*/
   struct list_head* thread_list_ptr; /*thread list pointer*/
 };
@@ -45,7 +44,7 @@ union task_union {
 extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
-//extern struct Semaforo semaf[NR_SEM];
+
 
 
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]

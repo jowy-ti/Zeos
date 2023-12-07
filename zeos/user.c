@@ -4,6 +4,8 @@ char buff[24];
 
 int pid;
 
+int semid;
+
 void readKeyBoard(){
   char b;
   while (1){
@@ -14,6 +16,8 @@ void readKeyBoard(){
 }
 
 void exitThread(){
+  semDestroy(semid);
+  semSignal(semid);
   threadExit();
 }
 
@@ -27,6 +31,7 @@ int __attribute__ ((__section__(".text.main")))
   sp.y = 1;
   sp.content = "---";
   spritePut(50, 20, &sp);
+  itoa(0,buff);
   char* buff1 = memoryInc(96);
   memoryInc(4000);
   int pid = fork();
@@ -37,10 +42,14 @@ int __attribute__ ((__section__(".text.main")))
     SetColor(5, 7);
     write(1,buff2, strlen(buff2));
     int tid = threadCreate(&exitThread, (void*)0);
-    semCreate(2);
-    semWait(0);
-    semWait(0);
-    semWait(0);
+    semid = semCreate(2);
+    semWait(semid);
+    semWait(semid);
+    semWait(semid);
+    semDestroy(semid);
+    semWait(semid);
+    semWait(semid);
+    semWait(semid);
     write(1,buff2, strlen(buff2));
     threadExit();
   }

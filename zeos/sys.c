@@ -216,6 +216,7 @@ int sys_gettime()
 {
   return zeos_ticks;
 }
+int threadStacksPage = TOTAL_PAGES;
 
 void sys_exit()
 {  
@@ -242,12 +243,12 @@ void sys_exit()
     list_del(&(thread->thread_head));
   }
   list_add_tail(current_thread_list, &free_thread_lists);
-  for (i=NUM_PAG_DATA+heap_pag; i<TOTAL_PAGES; i++)
+  for (i=threadStacksPage; i<TOTAL_PAGES; i++)
   {
-    int frame = get_frame(process_PT, PAG_LOG_INIT_DATA+heap_pag+i);
+    int frame = get_frame(process_PT, i);
     if (frame != 0){
       free_frame(frame);
-      del_ss_pag(process_PT, PAG_LOG_INIT_DATA+heap_pag+i);
+      del_ss_pag(process_PT, i);
     }
   }
   current()->PID=-1;
@@ -296,7 +297,6 @@ int sys_get_stats(int pid, struct stats *st)
 }
 
 
-int threadStacksPage = TOTAL_PAGES;
 
 int sys_threadCreate(void(*function)(void* arg), void* parameter){
   struct list_head *lhcurrent = NULL;
@@ -356,6 +356,7 @@ void sys_threadExit(void){
   page_table_entry *process_PT = get_PT(act);
   //dealloc user stack
   DWord stack_page = ((((union task_union*)act)->stack[KERNEL_STACK_SIZE - 2]/*esp*/)>>12);
+
   free_frame(get_frame(process_PT, stack_page));
   del_ss_pag(process_PT, stack_page);
 

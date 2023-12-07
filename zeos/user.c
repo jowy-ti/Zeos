@@ -36,7 +36,12 @@ int __attribute__ ((__section__(".text.main")))
     gotoXY(30, 20);
     SetColor(5, 7);
     write(1,buff2, strlen(buff2));
-    threadCreate(&exitThread, (void*)0);
+    int tid = threadCreate(&exitThread, (void*)0);
+    int semid = semCreate(2);
+    semWait(0);
+    semWait(0);
+    semWait(0);
+    write(1,buff2, strlen(buff2));
     threadExit();
   }
   else {

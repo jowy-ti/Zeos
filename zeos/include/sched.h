@@ -11,12 +11,13 @@
 #include <stats.h>
 
 #define NR_TASKS      10
-#define NR_SEM      20
+#define NR_SEM      3
 #define KERNEL_STACK_SIZE	1024
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
-struct semaforo {
+struct semaforo { 
+  int free;
   int tid_owner;
   int count;
   struct list_head sem_list;
@@ -34,6 +35,7 @@ struct task_struct {
   char* p_heap;
   struct list_head thread_head; /*thread enqueuing*/
   struct list_head* thread_list_ptr; /*thread list pointer*/
+  struct semaforo* sem[NR_SEM];
 };
 
 union task_union {

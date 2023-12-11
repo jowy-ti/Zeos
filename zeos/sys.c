@@ -461,12 +461,11 @@ int sys_SetColor(int color, int background) {
 
 //SEMAFOROS
 
-extern struct semaforo sem[NR_SEM];
-
 int test(int semid) {
+  struct task_struct* act = current();
+  
   if (semid < 0 || semid >= NR_SEM) return -1;
-  if (sem[semid].count == -1) return -1;
-  if (sem[semid].tid_owner == -1) return -1;
+  if (act->sem[semid]->free == 1) return -1;
   return 1;
 }
 
@@ -476,11 +475,12 @@ int sys_semCreate(int initial_value) {
   if (initial_value < 0) return -1;
   int find = -1;
   for (int i = 0; i < NR_SEM && find == -1; ++i) {
-    if (sem[i].count == -1) {
-      sem[i].count = initial_value;
-      sem[i].tid_owner = act->TID;
+    if (act->sem[i]->count == -1) {
+      act->sem[i]->free = 0;
+      act->sem[i]->count = initial_value;
+      act->sem[i]->tid_owner = act->TID;
       find = i;
-      INIT_LIST_HEAD(&(sem[i].sem_list));
+      INIT_LIST_HEAD(&(act->sem[i]->sem_list));
     }
   }
   if (find == -1) return -1;
@@ -492,22 +492,24 @@ int sys_semWait(int semid) {
   
   if (test(semid) == -1) return -1;
   
-  if (sem[semid].count <= 0) {
-    list_add_tail(&(act->list), &(sem[semid].sem_list));
+  act->sem[semid]->count -= 1;
+  
+  if (act->sem[semid]->count < 0) {
+    list_add_tail(&(act->list), &(act->sem[semid]->sem_list));
     sched_next_rr();
   }
-  else sem[semid].count -= 1;
   
   return 1;
 }
 
 int sys_semSignal(int semid) {
+  struct task_struct* act = current();
   
   if (test(semid) == -1) return -1;
   
-  sem[semid].count += 1;
-  if (sem[semid].count <= 1) {
-    struct list_head *new = list_first(&(sem[semid].sem_list));
+  act->sem[semid]->count += 1;
+  if (act->sem[semid]->count <= 0) {
+    struct list_head *new = list_first(&(act->sem[semid]->sem_list));
     list_del(new);
     list_add_tail(new, &readyqueue);
   }
@@ -519,16 +521,16 @@ int sys_semDestroy(int semid) {
   
   if (test(semid) == -1) return -1;
 	
-  if (act->TID == sem[semid].tid_owner) {
-    sem[semid].count = -1;
+  if (act->TID == act->sem[semid]->tid_owner) {
+    act->sem[semid]->free = 1;
     
-    while(!list_empty(&(sem[semid].sem_list))) {
-      struct list_head * new = list_first(&(sem[semid].sem_list));
+    while(!list_empty(&(act->sem[semid]->sem_list))) {
+      struct list_head * new = list_first(&(act->sem[semid]->sem_list));
       list_del(new);
       list_add_tail(new, &readyqueue);
     }
   }
   else return -1;
   
-  return 0;
+  return 1;
 }

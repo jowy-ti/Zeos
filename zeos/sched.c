@@ -38,7 +38,7 @@ struct list_head thread_list[NR_TASKS];
 //thread free lists
 struct list_head free_thread_lists;
 
-struct semaforo sem[NR_SEM];
+struct semaforo sem_total[NR_TASKS][NR_SEM];
 
 void init_stats(struct stats *s)
 {
@@ -259,9 +259,14 @@ struct task_struct* current()
 }
 
 void init_semaforos(void) {
-  for (int i = 0; i < NR_SEM; ++i) {
-    sem[i].count = -1;
-    sem[i].tid_owner = -1;
+  
+  for (int j = 0; j < NR_TASKS; ++j) {
+    for (int i = 0; i < NR_SEM; ++i) {
+      sem_total[j][i].free = 1;
+      sem_total[j][i].count = -1;
+      sem_total[j][i].tid_owner = -1;
+      task[j].task.sem[i] = &sem_total[j][i];
+    }
   }
 }
 

@@ -16,6 +16,8 @@ void readKeyBoard(){
 }
 
 void exitThread(){
+  //char klk[10] = "klk";
+  //write(1, klk, strlen(klk));
   semDestroy(semid);
   semSignal(semid);
   threadExit();
@@ -30,7 +32,7 @@ int __attribute__ ((__section__(".text.main")))
   sp.x = 3;
   sp.y = 1;
   sp.content = "---";
-  spritePut(50, 20, &sp);
+  spritePut(20, 20, &sp);
   itoa(0,buff);
   char* buff1 = memoryInc(96);
   memoryInc(4000);
@@ -41,16 +43,15 @@ int __attribute__ ((__section__(".text.main")))
     gotoXY(30, 20);
     SetColor(5, 7);
     write(1,buff2, strlen(buff2));
-    int tid = threadCreate(&exitThread, (void*)0);
+    threadCreate(&exitThread, (void*)0);
     semid = semCreate(2);
     semWait(semid);
     semWait(semid);
     semWait(semid);
     semDestroy(semid);
     semWait(semid);
-    semWait(semid);
-    semWait(semid);
-    write(1,buff2, strlen(buff2));
+    char suu[20] = "No me he bloqueado";
+    write(1,suu, strlen(suu));
     threadExit();
   }
   else {

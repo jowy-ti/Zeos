@@ -338,10 +338,19 @@ int sys_threadCreate(void(*function)(void* arg), void* parameter){
   while (i < TOTAL_PAGES && get_frame(newThread_PT, ((TOTAL_PAGES - 1) - i)) != 0){
     i++;
   }
-  if (i == TOTAL_PAGES) return -EAGAIN;
+  if (i == TOTAL_PAGES){
+    /* Free task_struct */
+    list_add_tail(&(newThread->task.list), &freequeue);
+    return -EAGAIN;
+  }
+
   /*Reserva y mapeo de pila de usuario*/
   int frame = alloc_frame();
-  if (frame == -1) return -EAGAIN;
+  if (frame == -1){
+    /* Free task_struct */
+    list_add_tail(&(newThread->task.list), &freequeue);
+    return -EAGAIN;
+  }
   unsigned long last_page = ((TOTAL_PAGES - 1) - i);
   set_ss_pag(newThread_PT, last_page, frame);
   DWord user_stackAddr = (last_page <<12);

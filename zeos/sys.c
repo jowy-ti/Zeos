@@ -77,6 +77,10 @@ int sys_fork(void)
   
   uchild=(union task_union*)list_head_to_task_struct(lhcurrent);
   
+  /*Save the value of the semaphore*/
+  unsigned long sem_addr[NR_SEM];
+  for (int i = 0; i < NR_SEM; ++i) sem_addr[i] = (unsigned long)uchild->task.sem[i];
+  
   /* Copy the parent's task struct to child's */
   copy_data(current(), uchild, sizeof(union task_union));
   
@@ -165,6 +169,9 @@ int sys_fork(void)
   /* Set stats to 0 */
   init_stats(&(uchild->task.p_stats));
 
+  /*Restore the value of the semaphore*/
+  for (int i = 0; i < NR_TASKS; ++i) uchild->task.sem[i] = (struct semaforo*)sem_addr[i];
+
   /*Assign a thread list*/
 
   struct list_head* threadL = list_first(&free_thread_lists);
@@ -176,6 +183,7 @@ int sys_fork(void)
   /* Queue child process into readyqueue */
   uchild->task.state=ST_READY;
   list_add_tail(&(uchild->task.list), &readyqueue);
+  
   
   return uchild->task.PID;
 }
@@ -225,6 +233,15 @@ void sys_exit()
   page_table_entry *process_PT = get_PT(current());
   int heap_pag = (((DWord)current()->p_heap - LOG_INIT_HEAP)/PAGE_SIZE);
   if ((DWord)current()->p_heap % PAGE_SIZE != 0) ++heap_pag;
+  
+  //Reiniciar los semáforos
+  struct task_struct* act = current();
+  
+  for (int i = 0; i < NR_SEM; ++i) {
+      act->sem[i]->free = 1;
+      act->sem[i]->count = -1;
+      act->sem[i]->tid_owner = -1;
+    }
 
   // Deallocate all the propietary physical pages
   for (i=0; i<NUM_PAG_DATA+heap_pag; i++)

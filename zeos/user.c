@@ -7,6 +7,7 @@ int pid;
 int semid;
 
 void readKeyBoard(){
+  semSignal(semid);
   char b;
   while (1){
     if (pollKey(&b) > -1){
@@ -16,10 +17,6 @@ void readKeyBoard(){
 }
 
 void exitThread(){
-  //char klk[10] = "klk";
-  //write(1, klk, strlen(klk));
-  semDestroy(semid);
-  semSignal(semid);
   threadExit();
 }
 
@@ -36,6 +33,7 @@ int __attribute__ ((__section__(".text.main")))
   itoa(0,buff);
   char* buff1 = memoryInc(96);
   memoryInc(4000);
+  semid = semCreate(2);
   int pid = fork();
   if (pid == 0){
     char buff2[32];
@@ -44,11 +42,9 @@ int __attribute__ ((__section__(".text.main")))
     SetColor(5, 7);
     write(1,buff2, strlen(buff2));
     threadCreate(&exitThread, (void*)0);
-    semid = semCreate(2);
-    semWait(semid);
-    semWait(semid);
-    semWait(semid);
     semDestroy(semid);
+    semWait(semid);
+    semWait(semid);
     semWait(semid);
     char suu[20] = "No me he bloqueado";
     write(1,suu, strlen(suu));
@@ -60,6 +56,11 @@ int __attribute__ ((__section__(".text.main")))
     itoa((int)buff3, buff2);
     write(1,buff2, strlen(buff2));
     threadCreate(&readKeyBoard, (void*)0);
+    semWait(semid);
+    semWait(semid);
+    semWait(semid);
+    char klk[10] = "yayyy";
+    write(1, klk, strlen(klk));
     pid = fork();
     if (pid == 0) exit();
   }

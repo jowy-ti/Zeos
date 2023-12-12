@@ -170,7 +170,7 @@ int sys_fork(void)
   init_stats(&(uchild->task.p_stats));
 
   /*Restore the value of the semaphore*/
-  for (int i = 0; i < NR_TASKS; ++i) uchild->task.sem[i] = (struct semaforo*)sem_addr[i];
+  for (int i = 0; i < NR_SEM; ++i) uchild->task.sem[i] = (struct semaforo*)sem_addr[i];
 
   /*Assign a thread list*/
 
